@@ -1,12 +1,13 @@
-# zhihu
-python code used for download original images from zhihu post.
-
-## What does it do?  
-
-Sometimes when browsing the web page of Zhihu, you can see that there are a lot of beautiful pictures under certain topics, and sometimes some good people (nicknamed class representatives) summarize the best of them and attach the corresponding links, the role of the code is to extract the pictures from these links one by one and file them under the id of the author of each post.
+## What does it do
+This code can download and save "Class Representative" posts and "Article Only" posts.  
 
 ## How to use
+Please put the address of "Class Representative" post into CLASS_PRESIDENT  
+Put the address of the "article-only" post into ARTICLE_SHARE  
+and specify the path of the save folder for both of them.  
 
-Copy the code into your code editor, or download it directly and run it in the new directory you created.
-
-When you see any answer that has a lot of links shown on Zhihu website, click "Share", write down the two numbers in the page, and enter my code in order to download and save it in batch.
+## Disclaimers
+All code is original to me and may be used freely without application.  
+However, no tampering that results in incomplete functionality may be done with attribution to the author.  
+This code was tested on April 9, 2022, and no warranty is made as to its usefulness thereafter.  
+Please handle all legal disputes by yourself.
