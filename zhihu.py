@@ -1,10 +1,17 @@
 '''
-This code can download and save "Class Representative" posts and "Article Only" posts.
-Please put the address of "Class Representative" post into CLASS_PRESIDENT
-Put the address of the "article-only" post into ARTICLE_SHARE
-and specify the path of the save folder for both of them.
+This code can download and save "class representative" post, 
+"article-only" post and "bunch of pictures" post.
 
-4/9/2022
+Read the link directly from the clipboard, then double-click the bat file to run it.
+
+BAT FILE:
+@py.exe "D:\Rilla\zhihu.py" %*
+@pause
+
+Instruction:
+go to the post on zhihu.com, click "share", then double click the bat file, choose the category of post.
+
+10/23/2022
 '''
 
 import os
@@ -12,20 +19,14 @@ import requests
 import time
 from bs4 import BeautifulSoup
 from threading import Thread
+from tkinter import Tk
 
+
+SAVE_DIRECTORY = r"D:\Rilla\zhihu"
 
 HEADER = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36'
-    ' (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.70',
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15"
 }
-
-# 王思聪为什么没能搞定孙一宁？ - 爱吃蛋挞的少女的回答 - 知乎
-ARTICLE_SHARE = "https://www.zhihu.com/question/465217042/answer/1946460662"
-ARTICLE_SHARE_PATH = r"C:\Users\Rilla\Desktop"
-
-# 女上司好看是种怎样的体验？ - 阿喏呀的回答 - 知乎
-CLASS_PRESIDENT = "https://www.zhihu.com/question/266626906/answer/2429500615"
-CLASS_PRESIDENT_PATH = r"D:\zhihu question"
 
 
 def get_soup_from_webpage(url, header, timeout=None):
@@ -70,9 +71,8 @@ def rillaget(url, dir_name, header):
         response = requests.get(url, headers=header, timeout=50)
 
         if response.status_code == requests.codes.ok:  # ok means 200 only
-            with open(total_path, 'wb') as fd:
-                for chunk in response.iter_content(1024):
-                    fd.write(chunk)
+            with open(total_path, 'wb') as f:
+                f.write(response.content)
             print(f"{filename}  Download successful")
         else:
             print(f"{url} Download Failed | Status Code： {response.status_code}")
@@ -124,32 +124,60 @@ def find_author(soup):
     return post_author
 
 
+def rilla_downloader(downlist, PATH):
+    threads = []
+    for image_url in downlist:
+        thread = Thread(target=rillaget, args=[
+                        image_url, PATH, HEADER])
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
+
+
+def solo_images():
+    os.chdir(SAVE_DIRECTORY)
+    soup = get_soup_from_webpage(QUESTION_URL, HEADER, 25)
+    title = find_title_of_the_main_post(soup)
+    author = find_author(soup)
+    downlist = extract_images_from_post(soup)
+    print(f"{title} \nAuthor {author} \nFound {len(downlist)} of images")
+    rilla_downloader(downlist, SAVE_DIRECTORY)
+    print(f"Save to {SAVE_DIRECTORY}")
+
+
 def main():
-    description = "哈啰，今天想要做什么呢？\nA.获取课代表帖中的所有图片\nB.保存文章\n>"
+    print(f"Now accessing：\n{QUESTION_URL}")
+    description = "Hello, what you wanna do today? \nA.Get links to all the images \
+    in the class rep post\nB.Save article\nC.Save all the pictures of the post with all the pictures\n>"
     selection = str(input(description)).upper()
     if selection == 'A':
         class_president()
     elif selection == "B":
         save_text()
+    elif selection == "C":
+        solo_images()
     else:
-        print("皇上指示不明，请恕臣妾愚钝。")
+        print("Your Majesty's instructions are unclear, please forgive my \
+        humble servant and try again later.")
 
 
 def class_president():
-    os.chdir(CLASS_PRESIDENT_PATH)
-
-    main_post_soup = get_soup_from_webpage(CLASS_PRESIDENT, HEADER, 25)
-    print(CLASS_PRESIDENT)  
-    print(find_title_of_the_main_post(main_post_soup))  
-    print("\n", "~~"*70, "\n")  
+    os.chdir(SAVE_DIRECTORY)
+    # Get all the links in the class rep post
+    main_post_soup = get_soup_from_webpage(QUESTION_URL, HEADER, 25)
+    print(QUESTION_URL)  # Print this posting address
+    # Print the title of this post
+    print(find_title_of_the_main_post(main_post_soup))
+    print("\n", "~~"*70, "\n")  # Print dividers
     questions_links = collect_cards_inside_question(main_post_soup)
-    print(f"Found the{len(questions_links)} segment")
+    print(f"Found{len(questions_links)}links, now are opening them")
 
-    # If you do find the link, create a new folder and prepare to start downloading
+    # If it does find the link, create a new folder and prepare to start downloading
     if not len(questions_links):
         return
     else:
-        mainfolder = " ".join([CLASS_PRESIDENT.split(
+        mainfolder = " ".join([QUESTION_URL.split(
             '/')[-1], find_title_of_the_main_post(main_post_soup)])
         mainfolder = make_name_valid(mainfolder)
         if not os.path.exists(mainfolder):
@@ -159,51 +187,74 @@ def class_president():
     for each_individual_question in questions_links:
         particular_question_soup = get_soup_from_webpage(
             each_individual_question, HEADER, 25)
-        dirname = find_author(particular_question_soup)
-        # Print this link post address
-        print(f"\nNow opening {each_individual_question}\nThe author of this post is {dirname}\n")
-        downlist = extract_images_from_post(particular_question_soup)
 
-        # Download the acquired images and save them in the folder of the author id of the post
+        # Need to determine whether there is a picture first, sometimes the post has been
+        # deleted, then return empty results
+        downlist = extract_images_from_post(particular_question_soup)
+        if not downlist:
+            print("Pictures not found, may have been harmonized")
+            continue
+
+        dirname = find_author(particular_question_soup)
+        print(
+            f"\nBeing opened {each_individual_question}\nThe author of the post is {dirname}\n")
+
+        # Download the acquired images and save them in the folder of the author id of the post,
         # for subsequent organization
         author_folder = os.path.join(mainfolder, dirname)
         if not os.path.exists(author_folder):
             os.makedirs(author_folder)
 
         # Perform multi-threaded downloads
-        threads = []
-        for image_url in downlist:
-            thread = Thread(target=rillaget, args=[
-                            image_url, author_folder, HEADER])
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        rilla_downloader(downlist, author_folder)
 
         # Wait a few seconds to give the server a break
         time.sleep(2)
+    print(f"Saved the image to {SAVE_DIRECTORY}")
 
 
 def save_text():
-    os.chdir(ARTICLE_SHARE_PATH)
-    soup = get_soup_from_webpage(ARTICLE_SHARE, HEADER, 25)
-    para_title = find_title_of_the_main_post(soup)
-    para_author = find_author(soup)
+    os.chdir(SAVE_DIRECTORY)
+    soup = get_soup_from_webpage(QUESTION_URL, HEADER, 25)
+    para_title = make_name_valid(find_title_of_the_main_post(soup))
+    para_author = make_name_valid(find_author(soup))
     text_name = "".join([para_title, ' _ ', para_author, '.txt'])
-    texts = soup.find('div', class_="RichContent-inner")
-    tag_p = texts.find_all('p')
-
+    article = soup.find("span", itemprop="text")
+    for br in article.find_all("br"):
+        br.replace_with("\n")
     print(text_name)
-    print(f"Found the {len(tag_p)} segment")
-    share_info_line = "".join([para_title, ' - ', para_author, '的回答 - 知乎'])
 
     with open(text_name, 'wt', encoding='utf-8') as f:
-        for each_para in tag_p:
-            pure_para = each_para.text
-            f.write(pure_para + '\n')
-        f.write('\n' + share_info_line + '\n' + ARTICLE_SHARE)
+        for each_line in article:
+            if each_line.text == '':
+                continue
+            elif each_line.name == 'p':
+                f.write(each_line.text.strip() + '\n')
+            elif each_line.name == 'blockquote':
+                f.write('\n' + each_line.text.strip() + '\n\n')
+        f.write('\n' + CLIPBOARD)
+    print(f"Saved the article to {SAVE_DIRECTORY}")
+
+
+def get_Clipboard_Text():
+    root = Tk()
+    root.withdraw()  # keep the window from showing
+    return root.clipboard_get()
 
 
 if __name__ == '__main__':
-    main()
-    print("～～花びらをまく～～")
+
+    # This code creates a blank widget to get the clipboard content from OS.
+    CLIPBOARD = get_Clipboard_Text()
+
+    if "zhihu.com/question" in CLIPBOARD and '\n' in CLIPBOARD:
+        split = CLIPBOARD.split('\n')
+        q_title, QUESTION_URL = split[0], split[1]
+
+        main()
+
+        print("～～花びらをまく～～")
+
+    else:
+        print(CLIPBOARD)
+        print("Please double check the clipboard content to make sure this is a Zhihu share link")
