@@ -1,13 +1,21 @@
 ## What does it do
-This code can download and save "Class Representative" posts and "Article Only" posts.  
+This code can download and save "class representative" post, 
+"article-only" post and "bunch of pictures" post.
+
+Read the link directly from the clipboard, then double-click the bat file to run it.
 
 ## How to use
-Please put the address of "Class Representative" post into CLASS_PRESIDENT  
-Put the address of the "article-only" post into ARTICLE_SHARE  
-and specify the path of the save folder for both of them.  
+1. Create a .bat file as below:
+```bat
+@py.exe "D:\Rilla\zhihu.py" %*
+@pause
+```
+
+2. go to the post on zhihu.com, on bottom of that post you want to save, click "share", 
+then double click the bat file, follow the menu. 
 
 ## Disclaimers
 All code is original to me and may be used freely without application.  
 However, no tampering that results in incomplete functionality may be done with attribution to the author.  
-This code was tested on April 9, 2022, and no warranty is made as to its usefulness thereafter.  
+This code was tested on October 9, 2022, and no warranty is made as to its usefulness thereafter.  
 Please handle all legal disputes by yourself.
