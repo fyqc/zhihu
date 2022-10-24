@@ -219,7 +219,10 @@ def save_text():
     para_title = make_name_valid(find_title_of_the_main_post(soup))
     para_author = make_name_valid(find_author(soup))
     text_name = "".join([para_title, ' _ ', para_author, '.txt'])
-    article = soup.find("span", itemprop="text")
+    article = soup.find("span", attrs={
+        "itemprop":"text",
+        "options":"[object Object]"
+        })
     for br in article.find_all("br"):
         br.replace_with("\n")
     print(text_name)
